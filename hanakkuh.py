@@ -1,22 +1,9 @@
 import pandas as pd
+import duckdb
 
-path = "./5784/noahs-customers.csv"
+def convert_name_t9(name):
 
-df = pd.read_csv(path)
-
-df.info()
-print(df['phone'])
-print(df.head())
-
-name = 'Cody Thoma'
-
-print(name.split()[-1])
-
-
-def name_to_numb(name):
-
-    t9_name  = ''
-
+    t9name  = ''
     t9 = {
         '2': 'abc',
         '3': 'def',
@@ -29,11 +16,65 @@ def name_to_numb(name):
     }
 
     for letter in name.split()[-1].lower():
-        for numbers, letters in t9.items():
+        for num, letters in t9.items():
             if letter in letters:
-                t9_name += numbers
+                t9name += num
                 break
     
-    return t9_name
+    return t9name
 
-print(name_to_numb(name))
+def initialize(full_name):
+    initials = ''
+
+    for name in full_name.split():
+        initials += name[0]
+    
+    return initials
+
+con = duckdb.connect(database=':memory:')
+
+customers_path = './5784/noahs-customers.csv'
+orders_path = './5784/noahs-orders.csv'
+
+
+### part 1
+
+customers_df = pd.read_csv('./5784/noahs-customers.csv')
+
+customers_df.info()
+# print(customers_df['phone'])
+# print(customers_df.head())
+
+t9_names = customers_df['name'].apply(convert_name_t9)
+pn_stripped = customers_df['phone'].str.replace('-', '')
+
+mask = t9_names == pn_stripped
+# print(customers_df[mask]['phone'])
+
+
+### part 2
+
+query = f"""
+select
+    c.customerid,
+    c.name,
+    o.ordered
+from
+    read_csv_auto ("{customers_path}") c
+left join
+    read_csv_auto ("{orders_path}") o
+on
+ c.customerid = o.customerid
+"""
+
+df = con.execute(query).fetchdf()
+var = pd.to_datetime(df['ordered']).dt.year
+mask = var == 2017
+
+initials = df['name'].apply(initialize)
+mask = mask & (initials == 'JP')
+print(df[mask])
+
+
+con.close()
+
