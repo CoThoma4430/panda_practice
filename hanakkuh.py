@@ -35,13 +35,14 @@ con = duckdb.connect(database=':memory:')
 
 customers_path = './5784/noahs-customers.csv'
 orders_path = './5784/noahs-orders.csv'
-
+orders_items_path = './5784/noahs-orders_items.csv'
+products_path = './5784/noahs-products.csv'
 
 ### part 1
 
 customers_df = pd.read_csv('./5784/noahs-customers.csv')
 
-customers_df.info()
+# customers_df.info()
 # print(customers_df['phone'])
 # print(customers_df.head())
 
@@ -67,13 +68,23 @@ on
  c.customerid = o.customerid
 """
 
+orders_items_df = pd.read_csv('./5784/noahs-orders_items.csv')
+
+products_df = pd.read_csv('./5784/noahs-products.csv')
+
+# orders_items_df.info()
+# print(orders_items_df['sku'])
+
+products_df.info()
+print(products_df['desc'])
+
 df = con.execute(query).fetchdf()
 var = pd.to_datetime(df['ordered']).dt.year
 mask = var == 2017
 
 initials = df['name'].apply(initialize)
 mask = mask & (initials == 'JP')
-print(df[mask])
+# print(df[mask])
 
 
 con.close()
