@@ -145,8 +145,62 @@ mask = mask & (initials == 'JP')
 
 ### answer to candle 2
 combined_df = con.execute(query_combined).fetchdf()
-print(combined_df)
+# print(combined_df)
+
+### Candle 3
+
+# print(customers_df['birthdate'])
+
+year = 1903
+
+years = []
+while year < 2020:
+    years.append(year)
+    year += 12
+
+query_cancer = f"""
+select
+    c.customerid,
+    COUNT(o.orderid) = 0 as no_orders
+from
+    read_csv_auto ("{customers_path}") c
+left join
+    read_csv_auto ("{orders_path}") o
+on
+    c.customerid = o.customerid
+group by 
+    c.customerid
+"""
+
+df_result = con.execute(query_cancer).fetchdf()
+
+customers_df['years'] = pd.to_datetime(customers_df['birthdate']).dt.year
+customers_df['rabbit'] = customers_df['years'].isin(years)
+customers_df['month'] = pd.to_datetime(customers_df['birthdate']).dt.month
+customers_df['day'] = pd.to_datetime(customers_df['birthdate']).dt.day
+mask_june_cancer = (customers_df['month'] == 6) & (customers_df['day'] >= 21)
+mask_july_cancer = (customers_df['month'] == 7) & (customers_df['day'] <= 22)
+mask_cancer = mask_june_cancer | mask_july_cancer
+birthdate_mask = mask_cancer & customers_df['rabbit']
+# print(customers_df[birthdate_mask & df_result['no_orders']])
+
+
+query_address = f"""
+select
+    address
+from
+    read_csv_auto ("{customers_path}") c
+where
+    customerid = 1475
+"""
+
+df_address = con.execute(query_address).fetchdf()
+# print(df_address)
+customers_df.info()
 
 con.close()
+
+
+
 
 
