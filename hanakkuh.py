@@ -174,20 +174,20 @@ group by
 
 df_result = con.execute(query_cancer).fetchdf()
 
-customers_df['years'] = pd.to_datetime(customers_df['birthdate']).dt.year
-customers_df['rabbit'] = customers_df['years'].isin(years)
-customers_df['month'] = pd.to_datetime(customers_df['birthdate']).dt.month
-customers_df['day'] = pd.to_datetime(customers_df['birthdate']).dt.day
-mask_june_cancer = (customers_df['month'] == 6) & (customers_df['day'] >= 21)
-mask_july_cancer = (customers_df['month'] == 7) & (customers_df['day'] <= 22)
-mask_cancer = mask_june_cancer | mask_july_cancer
-birthdate_mask = mask_cancer & customers_df['rabbit']
-# print(customers_df[birthdate_mask & df_result['no_orders']])
+# customers_df['years'] = pd.to_datetime(customers_df['birthdate']).dt.year
+# customers_df['rabbit'] = customers_df['years'].isin(years)
+# customers_df['month'] = pd.to_datetime(customers_df['birthdate']).dt.month
+# customers_df['day'] = pd.to_datetime(customers_df['birthdate']).dt.day
+# mask_june_cancer = (customers_df['month'] == 6) & (customers_df['day'] >= 21)
+# mask_july_cancer = (customers_df['month'] == 7) & (customers_df['day'] <= 22)
+# mask_cancer = mask_june_cancer | mask_july_cancer
+# birthdate_mask = mask_cancer & customers_df['rabbit']
 
 
 query_address = f"""
 select
-    address
+    address,
+    citystatezip
 from
     read_csv_auto ("{customers_path}") c
 where
@@ -195,12 +195,59 @@ where
 """
 
 df_address = con.execute(query_address).fetchdf()
-# print(df_address)
-customers_df.info()
+address_JP = df_address['citystatezip'].values[0]
+mask_address = customers_df['citystatezip'] == address_JP
+# print(mask_address)
+# customers_df.info()
+# print(customers_df['citystatezip'])
+# print(customers_df[birthdate_mask & df_result['no_orders'] & mask_address]['phone'])
+
+### candle 4
+
+query_for_pastry = f"""
+select
+    c.customerid,
+    o.orderid,
+    o.ordered,
+    p.desc
+from
+    read_csv_auto ("{customers_path}") c
+left join
+    read_csv_auto ("{orders_path}") o
+    on c.customerid = o.customerid
+left join
+    read_csv_auto ("{items_path}") i
+    on o.orderid = i.orderid
+left join
+    read_csv_auto ("{products_path}") p
+    on i.sku = p.sku
+ """   
+
+# customers_df.info()
+# orders_df.info()
+df_pastry = con.execute(query_for_pastry).fetchdf()
+df_pastry['hour'] = pd.to_datetime(df_pastry['ordered']).dt.hour
+mask_pastry_hour = df_pastry['hour'] < 5
+print(df_pastry[mask_pastry_hour]['desc'].unique())
+orders_df['hour'] = pd.to_datetime(orders_df['ordered']).dt.hour
+mask_hour = orders_df['hour'] < 5
+# print(products_df)
+# print(orders_df[mask_hour]['hour'].value_counts())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 con.close()
-
-
-
-
 
