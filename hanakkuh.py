@@ -225,25 +225,44 @@ left join
 
 # customers_df.info()
 # orders_df.info()
-df_pastry = con.execute(query_for_pastry).fetchdf()
-df_pastry['hour'] = pd.to_datetime(df_pastry['ordered']).dt.hour
-mask_pastry_hour = df_pastry['hour'] < 5
-print(df_pastry[mask_pastry_hour]['desc'].unique())
-orders_df['hour'] = pd.to_datetime(orders_df['ordered']).dt.hour
-mask_hour = orders_df['hour'] < 5
+# df_pastry = con.execute(query_for_pastry).fetchdf()
+# df_pastry['hour'] = pd.to_datetime(df_pastry['ordered']).dt.hour
+# mask_pastry_hour = df_pastry['hour'] < 5
+# print(df_pastry[mask_pastry_hour]['desc'].unique())
+# orders_df['hour'] = pd.to_datetime(orders_df['ordered']).dt.hour
+# mask_hour = orders_df['hour'] < 5
 # print(products_df)
 # print(orders_df[mask_hour]['hour'].value_counts())
 
+query_proditems = f"""
+select
+    c.name,
+    c.phone,
+    o.customerid,
+    o.orderid,
+    o.ordered,
+    o.shipped,
+    i.sku,
+    p.desc
+from
+    read_csv_auto ("{customers_path}") c
+left join
+    read_csv_auto ("{orders_path}") o
+    on c.customerid = o.customerid
+left join
+    read_csv_auto ("{items_path}") i
+    on o.orderid = i.orderid
+left join
+    read_csv_auto ("{products_path}") p
+    on i.sku = p.sku
+"""
 
-
-
-
-
-
-
-
-
-
+df_orditems = con.execute(query_proditems).fetchdf()
+sku_prefix = df_orditems['sku'].str[:3].unique()
+mask_bky_prefix = df_orditems['sku'].str.startswith('BKY').astype(bool)
+mask_bky_hour = pd.to_datetime(df_orditems['shipped']).dt.hour < 5
+mask_bky_year = pd.to_datetime(df_orditems['shipped']).dt.year == 2018
+print(df_orditems[mask_bky_prefix & mask_bky_hour & mask_bky_year])
 
 
 
